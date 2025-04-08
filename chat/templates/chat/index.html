@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Coach Assistant</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-green: #4CAF50;
+      --light-green: #8BC34A;
+      --accent-yellow: #FFEB3B;
+      --light-yellow: #FFF9C4;
+      --dark-text: #263238;
+      --light-text: #FFFFFF;
+      --gradient: linear-gradient(135deg, var(--primary-green), var(--accent-yellow));
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f9f9f9;
+      color: var(--dark-text);
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .app-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: fadeIn 0.5s ease-in-out;
+      margin-bottom: 30px;
+    }
+
+    .app-header {
+      background: var(--gradient);
+      padding: 20px;
+      color: var(--light-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .app-header h2 {
+      font-size: 28px;
+      letter-spacing: 0.5px;
+      margin: 0;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .app-icon {
+      margin-right: 12px;
+      font-size: 24px;
+      animation: pulse 2s infinite;
+    }
+
+    .input-container {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      position: relative;
+    }
+
+    #userInput {
+      width: 100%;
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #e0e0e0;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      resize: none;
+      height: 120px;
+      outline: none;
+    }
+
+    #userInput:focus {
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .send-button {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .send-button:hover {
+      background: var(--light-green);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .send-button:active {
+      transform: translateY(0);
+    }
+
+    .send-button i {
+      margin-left: 8px;
+    }
+
+    #responseArea {
+      padding: 20px;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .coach-message {
+      background: var(--light-yellow);
+      border-left: 4px solid var(--accent-yellow);
+      padding: 15px;
+      border-radius: 0 10px 10px 0;
+      margin: 10px 0;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .coach-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      color: var(--primary-green);
+      font-weight: bold;
+    }
+
+    .coach-icon {
+      margin-right: 8px;
+      color: var(--primary-green);
+    }
+
+    .typing-indicator {
+      display: flex;
+      padding: 15px;
+    }
+
+    .typing-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--primary-green);
+      border-radius: 50%;
+      margin: 0 3px;
+      opacity: 0.6;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation: typingDot 1s infinite 0s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation: typingDot 1s infinite 0.3s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation: typingDot 1s infinite 0.6s;
+    }
+
+    .error-message {
+      color: #d32f2f;
+      background: #ffebee;
+      padding: 15px;
+      border-radius: 10px;
+      border-left: 4px solid #d32f2f;
+      margin: 10px 0;
+      animation: shake 0.5s;
+    }
+
+    /* Premium Programs Styles */
+    .programs-section {
+      margin-top: 30px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary-green);
+      font-size: 24px;
+      font-weight: 700;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 4px;
+      background: var(--accent-yellow);
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .programs-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 20px;
+    }
+
+    .program-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .program-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .program-header {
+      height: 160px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .program-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px;
+      color: white;
+    }
+
+    .program-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .program-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .program-popular {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--accent-yellow);
+      color: var(--dark-text);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .program-sale {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #FF5252;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: pulse 1.5s infinite;
+    }
+
+    .program-body {
+      padding: 20px;
+    }
+
+    .program-features {
+      list-style-type: none;
+      margin-bottom: 20px;
+    }
+
+    .program-features li {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .program-features i {
+      color: var(--primary-green);
+      margin-right: 10px;
+    }
+
+    .program-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-green);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    .program-price span {
+      font-size: 14px;
+      font-weight: 400;
+      color: #666;
+      margin-left: 5px;
+    }
+
+    .program-price .original-price {
+      text-decoration: line-through;
+      color: #999;
+      font-size: 18px;
+      margin-right: 10px;
+    }
+
+    .program-button {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .program-button:hover {
+      background: var(--light-green);
+      transform: translateY(-2px);
+    }
+
+    .program-button i {
+      margin-left: 8px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes typingDot {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: white;
+      margin: 5% auto;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      position: relative;
+      animation: modalOpen 0.5s;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-modal {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #777;
+      transition: all 0.2s ease;
+    }
+
+    .close-modal:hover {
+      color: #333;
+    }
+
+    .modal-title {
+      color: var(--primary-green);
+      font-size: 24px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--light-yellow);
+      padding-bottom: 10px;
+    }
+
+    .checkout-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--dark-text);
+    }
+
+    .checkout-form input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .checkout-button {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .checkout-button:hover {
+      background: var(--light-green);
+    }
+
+    @keyframes modalOpen {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 992px) {
+      .programs-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .programs-container {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        width: 90%;
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app-header h2 {
+        font-size: 22px;
+      }
+
+      .send-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <i class="fas fa-dumbbell app-icon"></i>
+      <h2>Fitness Coach Assistant</h2>
+    </div>
+
+    <div class="input-container">
+      <textarea id="userInput" placeholder="Ask your fitness question here..."></textarea>
+      <button class="send-button" onclick="sendMessage()">
+        Send Question <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+
+    <div id="responseArea"></div>
+  </div>
+
+  <!-- Premium Programs Section -->
+  <div class="programs-section">
+    <h2 class="section-title">Premium Fitness Programs</h2>
+    <div class="programs-container">
+      <!-- Program 1: 5-Day Split + Nutrition -->
+      <div class="program-card" style="animation: fadeIn 0.3s ease-in-out forwards; animation-delay: 0.1s; opacity: 0;">
+        <div class="program-header" >
+          <div class="program-overlay">
+            <h3 class="program-title">5-Day Split + Nutrition</h3>
+            <p class="program-subtitle">Complete Body Transformation</p>
+          </div>
+          <div class="program-popular">Most Popular</div>
+        </div>
+        <div class="program-body">
+          <ul class="program-features">
+            <li><i class="fas fa-check-circle"></i> Detailed 12-week workout plan</li>
+            <li><i class="fas fa-check-circle"></i> Customized nutrition guide</li>
+            <li><i class="fas fa-check-circle"></i> Supplement recommendations</li>
+            <li><i class="fas fa-check-circle"></i> Weekly progress tracking</li>
+          </ul>
+          <div class="program-price">
+            $129.99 <span>/one-time payment</span>
+          </div>
+          <button class="program-button" onclick="openModal('5-Day Split + Nutrition')">
+            Get Started <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Program 2: HIIT Cardio Challenge -->
+      <div class="program-card" style="animation: fadeIn 0.3s ease-in-out forwards; animation-delay: 0.2s; opacity: 0;">
+        <div class="program-header">
+          <div class="program-overlay">
+            <h3 class="program-title">HIIT Cardio Challenge</h3>
+            <p class="program-subtitle">Rapid Fat Loss Program</p>
+          </div>
+        </div>
+        <div class="program-body">
+          <ul class="program-features">
+            <li><i class="fas fa-check-circle"></i> 8-week HIIT training program</li>
+            <li><i class="fas fa-check-circle"></i> Fat-burning meal plans</li>
+            <li><i class="fas fa-check-circle"></i> Video demonstrations</li>
+            <li><i class="fas fa-check-circle"></i> Daily calorie calculator</li>
+          </ul>
+          <div class="program-price">
+            $89.99 <span>/one-time payment</span>
+          </div>
+          <button class="program-button" onclick="openModal('HIIT Cardio Challenge')">
+            Get Started <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Program 3: Strength Mastery -->
+      <div class="program-card" style="animation: fadeIn 0.3s ease-in-out forwards; animation-delay: 0.3s; opacity: 0;">
+        <div class="program-header" >
+          <div class="program-overlay">
+            <h3 class="program-title">Strength Mastery</h3>
+            <p class="program-subtitle">Advanced Powerlifting Program</p>
+          </div>
+        </div>
+        <div class="program-body">
+          <ul class="program-features">
+            <li><i class="fas fa-check-circle"></i> 16-week periodized training</li>
+            <li><i class="fas fa-check-circle"></i> Technique analysis & feedback</li>
+            <li><i class="fas fa-check-circle"></i> High-protein diet guide</li>
+            <li><i class="fas fa-check-circle"></i> Personal records tracker</li>
+          </ul>
+          <div class="program-price">
+            $149.99 <span>/one-time payment</span>
+          </div>
+          <button class="program-button" onclick="openModal('Strength Mastery')">
+            Get Started <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Program 4: Yoga Fitness Fusion -->
+      <div class="program-card" style="animation: fadeIn 0.3s ease-in-out forwards; animation-delay: 0.4s; opacity: 0;">
+        <div class="program-header">
+          <div class="program-overlay">
+            <h3 class="program-title">Yoga Fitness Fusion</h3>
+            <p class="program-subtitle">Mind-Body Transformation</p>
+          </div>
+          <div class="program-sale">30% OFF</div>
+        </div>
+        <div class="program-body">
+          <ul class="program-features">
+            <li><i class="fas fa-check-circle"></i> 10-week flexibility program</li>
+            <li><i class="fas fa-check-circle"></i> Strength-building yoga flows</li>
+            <li><i class="fas fa-check-circle"></i> Meditation & mindfulness guidance</li>
+            <li><i class="fas fa-check-circle"></i> Anti-inflammatory meal plan</li>
+          </ul>
+          <div class="program-price">
+            <span class="original-price">$119.99</span> $83.99 <span>/one-time payment</span>
+          </div>
+          <button class="program-button" onclick="openModal('Yoga Fitness Fusion')">
+            Get Started <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <h3 class="modal-title" id="modalTitle">Checkout</h3>
+      <form class="checkout-form">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="John Doe" required>
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="john@example.com" required>
+
+        <label for="card">Card Information</label>
+        <input type="text" id="card" placeholder="1234 5678 9012 3456" maxlength="19" required>
+
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label for="expiry">Expiry Date</label>
+            <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" required>
+          </div>
+          <div style="flex: 1;">
+            <label for="cvv">CVV</label>
+            <input type="text" id="cvv" placeholder="123" maxlength="3" required>
+          </div>
+        </div>
+
+        <button type="button" class="checkout-button" onclick="processPayment()">
+          Complete Purchase <i class="fas fa-lock"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Allow Enter key to send message (Shift+Enter for new line)
+    document.getElementById('userInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const messageInput = document.getElementById('userInput');
+      const message = messageInput.value.trim();
+
+      if (!message) return;
+
+      const responseDiv = document.getElementById('responseArea');
+
+      // Show typing indicator
+      responseDiv.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+
+      try {
+        const res = await axios.post('/api/chat/', { message });
+
+        // Format the response with animation
+        responseDiv.innerHTML = `
+          <div class="coach-message">
+            <div class="coach-header">
+              <i class="fas fa-user-coach coach-icon"></i>
+              <span>Coach</span>
+            </div>
+            ${res.data.reply}
+          </div>
+        `;
+
+        // Clear input after successful send
+        messageInput.value = '';
+      } catch (err) {
+        responseDiv.innerHTML = `
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            Error: ${err.response?.data?.error || err.message}
+          </div>
+        `;
+      }
+
+      // Scroll to the bottom of the response area
+      responseDiv.scrollTop = responseDiv.scrollHeight;
+    }
+
+    // Modal functionality
+    function openModal(programName) {
+      document.getElementById('modalTitle').textContent = `Checkout: ${programName}`;
+      const modal = document.getElementById('checkoutModal');
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('checkoutModal');
+      modal.classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+      const modal = document.getElementById('checkoutModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Process payment (demo)
+    function processPayment() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const card = document.getElementById('card').value;
+      const expiry = document.getElementById('expiry').value;
+      const cvv = document.getElementById('cvv').value;
+
+      if (!name || !email || !card || !expiry || !cvv) {
+        alert('Please fill out all required fields.');
+        return;
+      }
+
+      // In a real application, this would connect to a payment processor
+      alert('Thank you for your purchase! You will receive an email with access instructions shortly.');
+      closeModal();
+    }
+
+    // Format card number with spaces
+    document.getElementById('card').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+      let formattedValue = '';
+
+      for (let i = 0; i < value.length; i++) {
+        if (i > 0 && i % 4 === 0) {
+          formattedValue += ' ';
+        }
+        formattedValue += value[i];
+      }
+
+      e.target.value = formattedValue;
+    });
+
+    // Format expiry date
+    document.getElementById('expiry').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+
+      if (value.length > 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2, 4);
+      }
+
+      e.target.value = value;
+    });
+
+    // Add initial welcome message
+    window.addEventListener('DOMContentLoaded', () => {
+      const responseDiv = document.getElementById('responseArea');
+      responseDiv.innerHTML = `
+        <div class="coach-message">
+          <div class="coach-header">
+            <i class="fas fa-user-coach coach-icon"></i>
+            <span>Coach</span>
+          </div>
+          Welcome to your personal Fitness Coach Assistant! How can I help with your fitness goals today? Check out our premium programs below for personalized training plans!
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>
