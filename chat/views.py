@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
 import json
+from django.shortcuts import render
+
 
 openai.api_key = settings.OPENAI_API_KEY  # Add your key in settings
 
@@ -24,3 +26,7 @@ def fitness_chat(request):
         return Response({"reply": reply})
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+
+def chat_page(request):
+    return render(request, 'chat/index.html')
